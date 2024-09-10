@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlatformService.Data;
 using PlatformService.DTOs;
 using PlatformService.Models;
+using PlatformService.SyncDataServices.Http;
 
 namespace PlatformService.Controllers
 {
@@ -13,11 +14,13 @@ namespace PlatformService.Controllers
     {
         private readonly IPlatformRepository _repository;
         private readonly IMapper _mapper;
+        private readonly ICommandDataClient _commandDataClient;
 
-        public PlatformController(IPlatformRepository platformRepository, IMapper mapper)
+        public PlatformController(IPlatformRepository platformRepository, IMapper mapper, ICommandDataClient commandDataClient)
         {
             _repository = platformRepository;
             _mapper = mapper;
+            _commandDataClient = commandDataClient;
         }
 
         [HttpGet]
@@ -53,6 +56,15 @@ namespace PlatformService.Controllers
             _repository.SaveChanges();
 
             var readDTO = _mapper.Map<PlatformReadDTO>(platformModel);
+
+            try
+            {
+                await _commandDataClient.SendPlatformToCommand(readDTO);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Could not send synchronously - {ex.Message}");
+            }
 
             return CreatedAtRoute(nameof(GetPlatformById), new { id = readDTO.Id }, readDTO);
         }
