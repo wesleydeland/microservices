@@ -8,10 +8,23 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<AppDbContext>(opt =>
+if (builder.Environment.IsProduction())
 {
-    opt.UseInMemoryDatabase("InMem");
-});
+    Console.WriteLine("--> Using in SQL Server db");
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+    {
+        opt.UseSqlServer(builder.Configuration.GetConnectionString("PlatformConn"));
+    });
+}
+else
+{
+    Console.WriteLine("--> Using in Mem db");
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+    {
+        opt.UseInMemoryDatabase("InMem");
+    });
+
+}
 builder.Services.AddScoped<IPlatformRepository, PlatformRepository>();
 builder.Services.AddHttpClient<ICommandDataClient, HttpCommandDataClient>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -28,7 +41,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-await PrepDb.PrepPopulation(app);
+await PrepDb.PrepPopulation(app, app.Environment.IsProduction());
 
 app.MapControllers();
 
