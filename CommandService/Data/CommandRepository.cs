@@ -34,6 +34,11 @@ public class CommandRepository : ICommandRepository
         await _context.Platforms.AddAsync(platform);
     }
 
+    public async Task<bool> ExternalPlatformExists(int externalPlatformId)
+    {
+        return await _context.Platforms.AsNoTracking().AnyAsync(p => p.ExternalId == externalPlatformId);
+    }
+
     public async Task<IEnumerable<Platform>> GetAllPlatorms()
     {
         return await _context.Platforms.AsNoTracking().ToListAsync();
